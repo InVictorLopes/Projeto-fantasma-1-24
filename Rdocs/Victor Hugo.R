@@ -1,6 +1,6 @@
 #Carregando banco de dados
 library(readr)
-dados <- read_csv("ESTAT/Projeto-fantasma-1-24/Banco/banco_final.csv")
+dados <- read_csv("Banco/banco_final.csv")
 
 #Instalando pacotes
 if (!require(pacman)) install.packages("pacman")
@@ -68,4 +68,21 @@ ggplot(dados_agregados, aes(x = as.factor(Decada), y = Numero_lancamentos, fill 
 
 #Mudando o local
 ggsave(filename = file.path(caminho_resultados, "colunas-lancamentos-format.pdf"), width = 158, height = 93, units = "mm")
+
+# Usando o pacote dplyr para agrupar e resumir os dados
+library(dplyr)
+
+# Calculando o resumo estatístico
+resumo_estatistico <- dados_agregados %>%
+  group_by(Decada, format) %>%
+  summarise(
+    media = mean(Numero_lancamentos),
+    mediana = median(Numero_lancamentos),
+    minimo = min(Numero_lancamentos),
+    maximo = max(Numero_lancamentos),
+    desvio_padrao = sd(Numero_lancamentos)
+  )
+
+# Exibindo o resumo estatístico
+print(resumo_estatistico)
 
