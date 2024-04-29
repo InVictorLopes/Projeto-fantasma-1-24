@@ -52,37 +52,34 @@ dados_agregados <- dados_agregados %>%
          label_relativa = paste(round(freq_relativa, 1), "%"))
 
 #Mudando diretório
-caminho_resultados <- "ESTAT/Projeto-fantasma-1-24/Resultado"
+caminho_resultados <- "C:\\Users\\victo\\Documents\\ESTAT\\Projeto-fantasma-1-24\\Resultado"
 
 #Gráfico
 ggplot(dados_agregados, aes(x = as.factor(Decada), y = Numero_lancamentos, fill = format)) +
   geom_bar(stat = "identity", position = "dodge") +
   geom_text(aes(label = label_absoluta),
             position = position_dodge(width = 0.9),
-            vjust = -1.5, size = 3) +
+            vjust = -1.1, size = 2) +
   geom_text(aes(label = label_relativa),
             position = position_dodge(width = 0.9),
-            vjust = -0.2, size = 3) +
+            vjust = -0, size = 2) +
   labs(x = "Década", y = "Número de Lançamentos", fill = "Formato") +
   theme_estat()
 
-#Mudando o local
+#salvando
 ggsave(filename = file.path(caminho_resultados, "colunas-lancamentos-format.pdf"), width = 158, height = 93, units = "mm")
 
-# Usando o pacote dplyr para agrupar e resumir os dados
-library(dplyr)
-
-# Calculando o resumo estatístico
-resumo_estatistico <- dados_agregados %>%
-  group_by(Decada, format) %>%
+#Medidas resumo
+medidas_absolutas <- dados_agregados %>%
+  group_by(format) %>%
   summarise(
     media = mean(Numero_lancamentos),
     mediana = median(Numero_lancamentos),
     minimo = min(Numero_lancamentos),
     maximo = max(Numero_lancamentos),
     desvio_padrao = sd(Numero_lancamentos)
-  )
+  ) %>%
+  distinct()
 
-# Exibindo o resumo estatístico
-print(resumo_estatistico)
+print(medidas_absolutas)
 
