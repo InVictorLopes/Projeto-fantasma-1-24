@@ -1,0 +1,71 @@
+#Carregando banco de dados
+library(readr)
+dados <- read_csv("ESTAT/Projeto-fantasma-1-24/Banco/banco_final.csv")
+
+#Instalando pacotes
+if (!require(pacman)) install.packages("pacman")
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate)
+
+#Padronização cores Estat
+estat_colors <- c(
+  "#A11D21", "#003366", "#CC9900",
+  "#663333", "#FF6600", "#CC9966",
+  "#999966", "#006606", "#008091", 
+  "#041835", "#666666" )
+
+theme_estat <- function(...) {
+  theme <- ggplot2::theme_bw() +
+    ggplot2::theme(
+      axis.title.y = ggplot2::element_text(colour = "black", size = 12),
+      axis.title.x = ggplot2::element_text(colour = "black", size = 12),
+      axis.text = ggplot2::element_text(colour = "black", size = 9.5),
+      panel.border = ggplot2::element_blank(),
+      axis.line = ggplot2::element_line(colour = "black"),
+      legend.position = "top",
+      ...
+    )
+  
+  return(
+    list(
+      theme,
+      scale_fill_manual(values = estat_colors),
+      scale_colour_manual(values = estat_colors)
+    )
+  )
+}
+
+#Criando e alterando Variável 
+dados$Ano <- year(dados$date_aired)
+dados$Decada <- 10 * floor(dados$Ano / 10)
+
+dados$format <- ifelse(dados$format == "Movie", "Filmes", 
+                       ifelse(dados$format == "Serie", "Séries", dados$format))
+#Agrupamento e cálculo
+dados_agregados <- dados %>%
+  group_by(Decada, format) %>%
+  summarise(Numero_lancamentos = n()) %>%
+  group_by(Decada) %>%
+  mutate(freq_relativa = Numero_lancamentos / sum(Numero_lancamentos) * 100)
+
+dados_agregados <- dados_agregados %>%
+  mutate(label_absoluta = paste(Numero_lancamentos),
+         label_relativa = paste(round(freq_relativa, 1), "%"))
+
+#Mudando diretório
+caminho_resultados <- "ESTAT/Projeto-fantasma-1-24/Resultado"
+
+#Gráfico
+ggplot(dados_agregados, aes(x = as.factor(Decada), y = Numero_lancamentos, fill = format)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = label_absoluta),
+            position = position_dodge(width = 0.9),
+            vjust = -1.5, size = 3) +
+  geom_text(aes(label = label_relativa),
+            position = position_dodge(width = 0.9),
+            vjust = -0.2, size = 3) +
+  labs(x = "Década", y = "Número de Lançamentos", fill = "Formato") +
+  theme_estat()
+
+#Mudando o local
+ggsave(filename = file.path(caminho_resultados, "colunas-lancamentos-format.pdf"), width = 158, height = 93, units = "mm")
+
