@@ -55,16 +55,13 @@ dados_agregados <- dados_agregados %>%
 caminho_resultados <- "C:\\Users\\victo\\Documents\\ESTAT\\Projeto-fantasma-1-24\\Resultado"
 
 #Gráfico
-ggplot(dados_agregados, aes(x = as.factor(Decada), y = Numero_lancamentos, fill = format)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_text(aes(label = label_absoluta),
-            position = position_dodge(width = 0.9),
-            vjust = -1.1, size = 2) +
-  geom_text(aes(label = label_relativa),
-            position = position_dodge(width = 0.9),
-            vjust = -0, size = 2) +
-  labs(x = "Década", y = "Número de Lançamentos", fill = "Formato") +
+# Gráfico de linhas
+ggplot(dados_agregados, aes(x = as.factor(Decada), y = Numero_lancamentos, color = format)) +
+  geom_line() +
+  geom_point() +  # Adiciona pontos para destacar os valores
+  labs(x = "Década", y = "Número de Lançamentos", color = "Formato") +
   theme_estat()
+
 
 #salvando
 ggsave(filename = file.path(caminho_resultados, "colunas-lancamentos-format.pdf"), width = 158, height = 93, units = "mm")
