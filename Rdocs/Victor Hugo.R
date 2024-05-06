@@ -44,39 +44,70 @@ dados$format <- ifelse(dados$format == "Movie", "Filmes",
 dados_agregados <- dados %>%
   group_by(Decada, format) %>%
   summarise(Numero_lancamentos = n()) %>%
-  group_by(Decada) %>%
-  mutate(freq_relativa = Numero_lancamentos / sum(Numero_lancamentos) * 100)
-
-dados_agregados <- dados_agregados %>%
-  mutate(label_absoluta = paste(Numero_lancamentos),
-         label_relativa = paste(round(freq_relativa, 1), "%"))
+  group_by(Decada)
 
 #Mudando diretório
 caminho_resultados <- "C:\\Users\\victo\\Documents\\ESTAT\\Projeto-fantasma-1-24\\Resultado"
 
-#Gráfico
-# Gráfico de linhas
-ggplot(dados_agregados, aes(x = as.factor(Decada), y = Numero_lancamentos, color = format)) +
+#Gráfico de linhas 
+ggplot(dados_agregados, aes(x = as.factor(Decada), y = Numero_lancamentos, group = format, color = format)) +
   geom_line() +
-  geom_point() +  # Adiciona pontos para destacar os valores
   labs(x = "Década", y = "Número de Lançamentos", color = "Formato") +
   theme_estat()
 
+#salvando
+ggsave(filename = file.path(caminho_resultados, "linhas-lancamentos-format.pdf"), width = 158, height = 93, units = "mm")
+
+#Medidas para tabela do grafico de linhas
+dados_agregados_wide <- dados_agregados %>%
+  pivot_wider(names_from = format, values_from = Numero_lancamentos)
+
+print(dados_agregados_wide)
+
+#SEGUNDA ANÁLISE
+
+#Alterando a variável season
+dados$season <- ifelse(dados$season == "Movie", "Filmes", 
+                       ifelse(dados$season == "Special", "Especial", dados$season))
+
+
+#Separando as temporadas
+dados_filtrados <- dados %>%
+  filter(season %in% c(1, 2, 3, 4))
+
+
+# Gráfico boxplot
+ggplot(dados_filtrados, aes(x = factor(season), y = imdb, fill = factor(season))) +
+  geom_boxplot() +
+  labs(x = "Temporada", y = "Nota IMDB", fill = "Temporadas") +
+  theme_estat() +
+  scale_fill_manual(values = c("#666666", "#CC9900", "#CC9966", "#008091")) +
+  scale_y_continuous(expand = c(0.05, 0), limits = c(1, 10), breaks = seq(1, 10, by = 1))
 
 #salvando
-ggsave(filename = file.path(caminho_resultados, "colunas-lancamentos-format.pdf"), width = 158, height = 93, units = "mm")
+ggsave(filename = file.path(caminho_resultados, "boxplot-notaimbd-temporada.pdf"), width = 158, height = 93, units = "mm")
 
-#Medidas resumo
-medidas_absolutas <- dados_agregados %>%
-  group_by(format) %>%
-  summarise(
-    media = mean(Numero_lancamentos),
-    mediana = median(Numero_lancamentos),
-    minimo = min(Numero_lancamentos),
-    maximo = max(Numero_lancamentos),
-    desvio_padrao = sd(Numero_lancamentos)
-  ) %>%
-  distinct()
 
-print(medidas_absolutas)
+
+#medidas
+mediana <- dados_filtrados %>%
+  group_by(season) %>%
+  summarise(mediana = median(imdb))
+media <- dados_filtrados %>%
+  group_by(season) %>%
+  summarise(media = mean(imdb))
+iqr <- dados_filtrados %>%
+  group_by(season) %>%
+  summarise(IQR = IQR(imdb))
+min_max <- dados_filtrados %>%
+  group_by(season) %>%
+  summarise(minimo = min(imdb),
+            maximo = max(imdb))
+desvio_padrao <- dados_filtrados %>%
+  group_by(season) %>%
+  summarise(desvio_padrao = sd(imdb))
+
+#Mostrar
+med_stat <- merge(merge(merge(merge(mediana, media, by = "season"), iqr, by = "season"), min_max, by = "season"), desvio_padrao, by = "season")
+med_stat
 
