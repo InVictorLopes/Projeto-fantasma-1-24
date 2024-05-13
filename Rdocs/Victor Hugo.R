@@ -7,11 +7,7 @@ if (!require(pacman)) install.packages("pacman")
 pacman::p_load(tidyverse, ggplot2, dplyr, lubridate)
 
 #Padronização cores Estat
-estat_colors <- c(
-  "#A11D21", "#003366", "#CC9900",
-  "#663333", "#FF6600", "#CC9966",
-  "#999966", "#006606", "#008091", 
-  "#041835", "#666666" )
+cores_estat <- c("#A11D21", "#003366", "#CC9900", "#663333", "#FF6600", "#CC9966", "#999966", "#006606", "#008091", "#041835", "#666666")
 
 theme_estat <- function(...) {
   theme <- ggplot2::theme_bw() +
@@ -28,8 +24,8 @@ theme_estat <- function(...) {
   return(
     list(
       theme,
-      scale_fill_manual(values = estat_colors),
-      scale_colour_manual(values = estat_colors)
+      scale_fill_manual(values = cores_estat),
+      scale_colour_manual(values = cores_estat)
     )
   )
 }
@@ -40,6 +36,7 @@ dados$Decada <- 10 * floor(dados$Ano / 10)
 
 dados$format <- ifelse(dados$format == "Movie", "Filmes", 
                        ifelse(dados$format == "Serie", "Séries", dados$format))
+
 #Agrupamento e cálculo
 dados_agregados <- dados %>%
   group_by(Decada, format) %>%
@@ -50,12 +47,12 @@ dados_agregados <- dados %>%
 caminho_resultados <- "C:\\Users\\victo\\Documents\\ESTAT\\Projeto-fantasma-1-24\\Resultado"
 
 #Gráfico de linhas 
-ggplot(dados_agregados, aes(x = as.factor(Decada), y = Numero_lancamentos, group = format, color = format)) +
-  geom_line() +
+ggplot(dados_agregados) +
+  aes(x = Decada, y = Numero_lancamentos, group = format, color = format) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
   labs(x = "Década", y = "Número de Lançamentos", color = "Formato") +
   theme_estat()
-
-#salvando
 ggsave(filename = file.path(caminho_resultados, "linhas-lancamentos-format.pdf"), width = 158, height = 93, units = "mm")
 
 #Medidas para tabela do grafico de linhas
@@ -64,7 +61,7 @@ dados_agregados_wide <- dados_agregados %>%
 
 print(dados_agregados_wide)
 
-#SEGUNDA ANÁLISE
+##SEGUNDA ANÁLISE
 
 #Alterando a variável season
 dados$season <- ifelse(dados$season == "Movie", "Filmes", 
@@ -75,21 +72,17 @@ dados$season <- ifelse(dados$season == "Movie", "Filmes",
 dados_filtrados <- dados %>%
   filter(season %in% c(1, 2, 3, 4))
 
-
 # Gráfico boxplot
-ggplot(dados_filtrados, aes(x = factor(season), y = imdb, fill = factor(season))) +
-  geom_boxplot() +
-  labs(x = "Temporada", y = "Nota IMDB", fill = "Temporadas") +
-  theme_estat() +
-  scale_fill_manual(values = c("#666666", "#CC9900", "#CC9966", "#008091")) +
-  scale_y_continuous(expand = c(0.05, 0), limits = c(1, 10), breaks = seq(1, 10, by = 1))
-
-#salvando
+ggplot(dados_filtrados) +
+  aes(x = reorder(season, imdb), y = imdb) +
+  geom_boxplot(fill = c("#A11D21"), width = 0.5) +
+  stat_summary(
+    fun = "mean", geom = "point", shape = 23, size = 3, fill = "white") +
+  labs(x = "Temporada", y = "Nota IMDB") +
+  theme_estat()
 ggsave(filename = file.path(caminho_resultados, "boxplot-notaimbd-temporada.pdf"), width = 158, height = 93, units = "mm")
 
-
-
-#medidas
+#medidas trocar para a padronização
 mediana <- dados_filtrados %>%
   group_by(season) %>%
   summarise(mediana = median(imdb))
@@ -107,7 +100,11 @@ desvio_padrao <- dados_filtrados %>%
   group_by(season) %>%
   summarise(desvio_padrao = sd(imdb))
 
-#Mostrar
 med_stat <- merge(merge(merge(merge(mediana, media, by = "season"), iqr, by = "season"), min_max, by = "season"), desvio_padrao, by = "season")
 med_stat
+med_stat_long <- pivot_longer(med_stat, -season, names_to = "Estatistica", values_to = "Valor")
+
+##TERCEIRA ANÁLISE
+
+
 
