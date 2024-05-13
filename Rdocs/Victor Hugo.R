@@ -106,5 +106,52 @@ med_stat_long <- pivot_longer(med_stat, -season, names_to = "Estatistica", value
 
 ##TERCEIRA ANÁLISE
 
+top_terrenos <- dados_filtrados %>%
+  group_by(setting_terrain) %>%
+  summarise(n = n()) %>%
+  arrange(desc(n)) %>%
+  slice(1:3) %>%
+  pull(setting_terrain)
+
+dados_top3 <- dados_filtrados %>%
+  filter(setting_terrain %in% top_terrenos)
+
+dados_classes_top3 <- dados_top3 %>%
+  count(setting_terrain) %>%
+  mutate(
+    freq = n,
+    relative_freq = round((freq / sum(freq)) * 100, 1),
+    freq = gsub("\\.", ",", relative_freq) %>% paste("%", sep = ""),
+    label = str_c(n, " (", freq, ")") %>% str_squish()
+  )
+
+ggplot(dados_classes_top3) +
+  aes(x = fct_reorder(setting_terrain, n, .desc=T), y = n, label = label) +
+  geom_bar(stat = "identity", fill = "#A11D21", width = 0.7) +
+  geom_text(
+    position = position_dodge(width = .9),
+    vjust = -0.5, #hjust = .5,
+    size = 3
+  ) +
+  labs(x = "Tipo de Terreno", y = "Frequência") +
+  scale_x_discrete(labels = c("Floresta", "Rural", "Urbano")) +  
+  theme_estat()
+ggsave(filename = file.path(caminho_resultados, "colunas-uni-freq-top3.pdf"), width = 158, height = 93, units = "mm")
+
+library(psych)
+
+# Estatísticas sumárias para a Floresta
+summary(dados_filtrados$trap_work_first[dados_filtrados$setting_terrain == "Floresta"])
+
+# Estatísticas sumárias para o Terreno Rural
+summary(dados_filtrados$trap_work_first[dados_filtrados$setting_terrain == "Rural"])
+
+# Estatísticas sumárias para o Terreno Urbano
+summary(dados_filtrados$trap_work_first[dados_filtrados$setting_terrain == "Urbano"])
+
+# Ou usando describe() para estatísticas mais detalhadas
+describe(dados_filtrados$trap_work_first[dados_filtrados$setting_terrain == "Floresta"])
+describe(dados_filtrados$trap_work_first[dados_filtrados$setting_terrain == "Rural"])
+describe(dados_filtrados$trap_work_first[dados_filtrados$setting_terrain == "Urbano"])
 
 
