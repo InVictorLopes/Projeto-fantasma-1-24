@@ -165,3 +165,25 @@ ggplot(dados_terrenos_agregados) +
   labs(x = "Tipo de Terreno", y = "Frequência", fill = "Armadilha Funcionou de Primeira") +
   theme_estat()
 ggsave(filename = file.path(caminho_resultados, "colunas-freq-armadilha-terreno.pdf"), width = 158, height = 93, units = "mm")
+
+#Análise 4
+
+dados <- dados %>%
+  filter(!is.na(imdb) & !is.na(engagement))
+
+# Gráfico de dispersão com linha de tendência
+ggplot(dados) +
+  aes(x = imdb, y = engagement) +
+  geom_point(colour = "#A11D21", size = 3) +
+  labs(
+    x = "Nota IMDB", 
+    y = "Engajamento") +
+  theme_estat()
+ggsave(filename = file.path(caminho_resultados, "dispersao-notas-engajamento.pdf"), width = 158, height = 93, units = "mm")
+
+#Análise 5
+
+
+
+
+
