@@ -4,7 +4,7 @@ dados <- read_csv("Banco/banco_final.csv")
 
 #Instalando pacotes
 if (!require(pacman)) install.packages("pacman")
-pacman::p_load(tidyverse, ggplot2, dplyr, lubridate)
+pacman::p_load(tidyverse, ggplot2, dplyr, lubridate, stringr)
 
 #Padronização cores Estat
 cores_estat <- c("#A11D21", "#003366", "#CC9900", "#663333", "#FF6600", "#CC9966", "#999966", "#006606", "#008091", "#041835", "#666666")
@@ -82,7 +82,7 @@ ggplot(dados_filtrados) +
   theme_estat()
 ggsave(filename = file.path(caminho_resultados, "boxplot-notaimbd-temporada.pdf"), width = 158, height = 93, units = "mm")
 
-#medidas trocar para a padronização
+# medidas trocar para a padronização
 mediana <- dados_filtrados %>%
   group_by(season) %>%
   summarise(mediana = median(imdb))
@@ -100,12 +100,23 @@ desvio_padrao <- dados_filtrados %>%
   group_by(season) %>%
   summarise(desvio_padrao = sd(imdb))
 
+# Merge das estatísticas
 med_stat <- merge(merge(merge(merge(mediana, media, by = "season"), iqr, by = "season"), min_max, by = "season"), desvio_padrao, by = "season")
-med_stat
-med_stat_long <- pivot_longer(med_stat, -season, names_to = "Estatistica", values_to = "Valor")
+
+# Converter para formato longo
+med_stat_long <- med_stat %>%
+  pivot_longer(cols = -season, names_to = "Estatistica", values_to = "Valor")
+
+# Pivot_wider para trocar linhas e colunas
+med_stat_wide <- med_stat_long %>%
+  pivot_wider(names_from = season, values_from = Valor)
+
+# Visualizar a tabela com linhas e colunas trocadas
+med_stat_wide
 
 ##TERCEIRA ANÁLISE
 
+# Filtrar apenas os top 3 terrenos mais frequentes
 top_terrenos <- dados_filtrados %>%
   group_by(setting_terrain) %>%
   summarise(n = n()) %>%
@@ -113,8 +124,59 @@ top_terrenos <- dados_filtrados %>%
   slice(1:3) %>%
   pull(setting_terrain)
 
+# Filtrar os dados apenas para os top 3 terrenos
 dados_top3 <- dados_filtrados %>%
   filter(setting_terrain %in% top_terrenos)
+
+# Calcular o número total de armadilhas colocadas em cada tipo de terreno dos top 3
+total_armadilhas <- dados_top3 %>%
+  group_by(setting_terrain) %>%
+  summarise(total = n())
+
+# Calcular o número de armadilhas que foram ativadas primeiro em cada tipo de terreno dos top 3
+ativadas_primeiro <- dados_top3 %>%
+  filter(trap_work_first) %>%
+  group_by(setting_terrain) %>%
+  summarise(ativadas = n())
+
+# Combinar os dados em um único conjunto de dados
+dados_plot <- merge(total_armadilhas, ativadas_primeiro, by = "setting_terrain", all.x = TRUE)
+
+# Preencher valores NA com 0
+dados_plot[is.na(dados_plot)] <- 0
+
+# Calcular a frequência relativa das armadilhas ativadas primeiro e não ativadas primeiro
+dados_plot$frequencia_ativadas <- dados_plot$ativadas / dados_plot$total
+dados_plot$frequencia_nao_ativadas <- 1 - dados_plot$frequencia_ativadas
+
+# Reorganizar os dados para o gráfico de barras empilhado
+dados_plot_long <- dados_plot %>%
+  pivot_longer(cols = c(frequencia_ativadas, frequencia_nao_ativadas),
+               names_to = "Status da Ativação",
+               values_to = "Frequencia")
+
+# Calcular as frequências absolutas para os top 3 terrenos
+frequencias <- dados_filtrados %>%
+  filter(setting_terrain %in% top_terrenos) %>%
+  count(setting_terrain, trap_work_first) %>%
+  group_by(setting_terrain) %>%
+  mutate(total = sum(n)) %>%
+  ungroup() %>%
+  mutate(proporcao = n / total,
+         label_porcentagem = paste0(format(proporcao * 100, digits = 1), "%"),
+         label_absoluto = n) 
+
+# Plot
+ggplot(frequencias) +
+  aes(x = setting_terrain, y = proporcao, fill = trap_work_first) +
+  geom_bar(stat = "identity", position = "stack", width = 0.7) +
+  geom_text(aes(label = paste(label_porcentagem, " (", label_absoluto, ")", sep = "")),
+            position = position_stack(vjust = 0.5), size = 3, color = "black") +
+  labs(x = "Tipo de Terreno", y = "Proporção de Armadilhas", fill = "Status da Ativação") +
+  scale_fill_manual(values = c("#FF7F0E", "#1f77b4"), labels = c("Ativadas Primeiro", "Não Ativadas Primeiro")) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+ggsave(filename = file.path(caminho_resultados, "colunas-uni-freq-emp-top3.pdf"), width = 158, height = 93, units = "mm")
 
 dados_classes_top3 <- dados_top3 %>%
   count(setting_terrain) %>%
@@ -137,21 +199,3 @@ ggplot(dados_classes_top3) +
   scale_x_discrete(labels = c("Floresta", "Rural", "Urbano")) +  
   theme_estat()
 ggsave(filename = file.path(caminho_resultados, "colunas-uni-freq-top3.pdf"), width = 158, height = 93, units = "mm")
-
-library(psych)
-
-# Estatísticas sumárias para a Floresta
-summary(dados_filtrados$trap_work_first[dados_filtrados$setting_terrain == "Floresta"])
-
-# Estatísticas sumárias para o Terreno Rural
-summary(dados_filtrados$trap_work_first[dados_filtrados$setting_terrain == "Rural"])
-
-# Estatísticas sumárias para o Terreno Urbano
-summary(dados_filtrados$trap_work_first[dados_filtrados$setting_terrain == "Urbano"])
-
-# Ou usando describe() para estatísticas mais detalhadas
-describe(dados_filtrados$trap_work_first[dados_filtrados$setting_terrain == "Floresta"])
-describe(dados_filtrados$trap_work_first[dados_filtrados$setting_terrain == "Rural"])
-describe(dados_filtrados$trap_work_first[dados_filtrados$setting_terrain == "Urbano"])
-
-
