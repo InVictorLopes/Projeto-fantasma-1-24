@@ -114,88 +114,54 @@ med_stat_wide <- med_stat_long %>%
 # Visualizar a tabela com linhas e colunas trocadas
 med_stat_wide
 
-##TERCEIRA ANÁLISE
+#Análise 3
 
-# Filtrar apenas os top 3 terrenos mais frequentes
-top_terrenos <- dados_filtrados %>%
+
+dados <- dados %>%
+  filter(!is.na(setting_terrain) & !is.na(trap_work_first))
+
+# Tradução dos tipos de terrenos
+traducao_terrenos <- c(
+  "Urban" = "Urbano",
+  "Rural" = "Rural",
+  "Forest" = "Floresta"
+  # Adicione mais traduções conforme necessário
+)
+
+dados <- dados %>%
+  mutate(setting_terrain = recode(setting_terrain, !!!traducao_terrenos))
+
+# Traduzindo e ordenando a variável trap_work_first
+dados <- dados %>%
+  mutate(trap_work_first = ifelse(trap_work_first, "SIM", "NÃO"),
+         trap_work_first = factor(trap_work_first, levels = c("SIM", "NÃO")))
+
+# Análise dos três tipos de terrenos mais frequentes
+terrenos_freq <- dados %>%
   group_by(setting_terrain) %>%
-  summarise(n = n()) %>%
-  arrange(desc(n)) %>%
-  slice(1:3) %>%
-  pull(setting_terrain)
+  summarise(freq = n()) %>%
+  arrange(desc(freq)) %>%
+  slice(1:3)
 
-# Filtrar os dados apenas para os top 3 terrenos
-dados_top3 <- dados_filtrados %>%
-  filter(setting_terrain %in% top_terrenos)
+# Filtrar os dados para os três tipos de terrenos mais frequentes
+dados_terrenos <- dados %>%
+  filter(setting_terrain %in% terrenos_freq$setting_terrain)
 
-# Calcular o número total de armadilhas colocadas em cada tipo de terreno dos top 3
-total_armadilhas <- dados_top3 %>%
-  group_by(setting_terrain) %>%
-  summarise(total = n())
+# Calcular a frequência de ativação da armadilha nesses terrenos
+dados_terrenos_agregados <- dados_terrenos %>%
+  group_by(setting_terrain, trap_work_first) %>%
+  summarise(freq = n()) %>%
+  mutate(freq_relativa = round(freq / sum(freq) * 100, 1))
 
-# Calcular o número de armadilhas que foram ativadas primeiro em cada tipo de terreno dos top 3
-ativadas_primeiro <- dados_top3 %>%
-  filter(trap_work_first) %>%
-  group_by(setting_terrain) %>%
-  summarise(ativadas = n())
+# Criar legendas com frequência e porcentagem
+dados_terrenos_agregados <- dados_terrenos_agregados %>%
+  mutate(legendas = str_c(freq, " (", freq_relativa, "%)"))
 
-# Combinar os dados em um único conjunto de dados
-dados_plot <- merge(total_armadilhas, ativadas_primeiro, by = "setting_terrain", all.x = TRUE)
-
-# Preencher valores NA com 0
-dados_plot[is.na(dados_plot)] <- 0
-
-# Calcular a frequência relativa das armadilhas ativadas primeiro e não ativadas primeiro
-dados_plot$frequencia_ativadas <- dados_plot$ativadas / dados_plot$total
-dados_plot$frequencia_nao_ativadas <- 1 - dados_plot$frequencia_ativadas
-
-# Reorganizar os dados para o gráfico de barras empilhado
-dados_plot_long <- dados_plot %>%
-  pivot_longer(cols = c(frequencia_ativadas, frequencia_nao_ativadas),
-               names_to = "Status da Ativação",
-               values_to = "Frequencia")
-
-# Calcular as frequências absolutas para os top 3 terrenos
-frequencias <- dados_filtrados %>%
-  filter(setting_terrain %in% top_terrenos) %>%
-  count(setting_terrain, trap_work_first) %>%
-  group_by(setting_terrain) %>%
-  mutate(total = sum(n)) %>%
-  ungroup() %>%
-  mutate(proporcao = n / total,
-         label_porcentagem = paste0(format(proporcao * 100, digits = 1), "%"),
-         label_absoluto = n) 
-
-# Plot
-ggplot(frequencias) +
-  aes(x = setting_terrain, y = proporcao, fill = trap_work_first) +
-  geom_bar(stat = "identity", position = "stack", width = 0.7) +
-  geom_text(aes(label = paste(label_porcentagem, " (", label_absoluto, ")", sep = "")),
-            position = position_stack(vjust = 0.5), size = 3, color = "black") +
-  labs(x = "Tipo de Terreno", y = "Proporção de Armadilhas", fill = "Status da Ativação") +
-  scale_fill_manual(values = c("#FF7F0E", "#1f77b4"), labels = c("Ativadas Primeiro", "Não Ativadas Primeiro")) +
-  theme_minimal() +
-  theme(legend.position = "bottom")
-ggsave(filename = file.path(caminho_resultados, "colunas-uni-freq-emp-top3.pdf"), width = 158, height = 93, units = "mm")
-
-dados_classes_top3 <- dados_top3 %>%
-  count(setting_terrain) %>%
-  mutate(
-    freq = n,
-    relative_freq = round((freq / sum(freq)) * 100, 1),
-    freq = gsub("\\.", ",", relative_freq) %>% paste("%", sep = ""),
-    label = str_c(n, " (", freq, ")") %>% str_squish()
-  )
-
-ggplot(dados_classes_top3) +
-  aes(x = fct_reorder(setting_terrain, n, .desc=T), y = n, label = label) +
-  geom_bar(stat = "identity", fill = "#A11D21", width = 0.7) +
-  geom_text(
-    position = position_dodge(width = .9),
-    vjust = -0.5, #hjust = .5,
-    size = 3
-  ) +
-  labs(x = "Tipo de Terreno", y = "Frequência") +
-  scale_x_discrete(labels = c("Floresta", "Rural", "Urbano")) +  
+# Gráfico de barras
+ggplot(dados_terrenos_agregados) +
+  aes(x = fct_reorder(setting_terrain, freq, .desc = TRUE), y = freq, fill = trap_work_first, label = legendas) +
+  geom_col(position = position_dodge2(preserve = "single", padding = 0)) +
+  geom_text(position = position_dodge(width = 0.9), vjust = -0.2, hjust = 0.5, size = 3) +
+  labs(x = "Tipo de Terreno", y = "Frequência", fill = "Armadilha Funcionou de Primeira") +
   theme_estat()
-ggsave(filename = file.path(caminho_resultados, "colunas-uni-freq-top3.pdf"), width = 158, height = 93, units = "mm")
+ggsave(filename = file.path(caminho_resultados, "colunas-freq-armadilha-terreno.pdf"), width = 158, height = 93, units = "mm")
