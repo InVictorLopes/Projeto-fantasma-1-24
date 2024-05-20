@@ -183,7 +183,80 @@ ggsave(filename = file.path(caminho_resultados, "dispersao-notas-engajamento.pdf
 
 #Análise 5
 
+# Adicionando as traduções para as colunas faltantes
+traducoes <- c(
+  "caught_fred" = "Fred_capturou",
+  "caught_daphnie" = "Daphnie_capturou",
+  "caught_velma" = "Velma_capturou",
+  "caught_shaggy" = "Salsicha_capturou",
+  "caught_scooby" = "Scooby_capturou",
+  "caught_other" = "Outro_capturou",
+  "caught_not" = "Nao_capturado"
+)
+
+# Alterar os nomes das colunas
+dados <- dados %>%
+  rename_with(~ traducoes[.x], starts_with("caught_"))
+
+# Mapear as variáveis caught_* para SIM ou NÃO
+dados$Fred_capturou <- ifelse(dados$Fred_capturou == TRUE, "SIM", "NÃO")
+dados$Daphnie_capturou <- ifelse(dados$Daphnie_capturou == TRUE, "SIM", "NÃO")
+dados$Velma_capturou <- ifelse(dados$Velma_capturou == TRUE, "SIM", "NÃO")
+dados$Salsicha_capturou <- ifelse(dados$Salsicha_capturou == TRUE, "SIM", "NÃO")
+dados$Scooby_capturou <- ifelse(dados$Scooby_capturou == TRUE, "SIM", "NÃO")
+dados$Outro_capturou <- ifelse(dados$Outro_capturou == TRUE, "SIM", "NÃO") 
 
 
+dados_analise_engajamento <- dados %>%
+  select(engagement, Fred_capturou, Daphnie_capturou, Velma_capturou, Salsicha_capturou, Scooby_capturou, Outro_capturou)
 
+dados_analise_engajamento <- dados_analise_engajamento %>%
+  mutate(across(
+    c("Fred_capturou", "Daphnie_capturou", "Velma_capturou", "Salsicha_capturou", "Scooby_capturou", "Outro_capturou"),
+    ~ fct_relevel(., "SIM", "NÃO")
+  ))
+# Criando um vetor apenas com os nomes traduzidos dos personagens
+traducoes_apenas_personagens <- c(
+  "Fred_capturou" = "Fred",
+  "Daphnie_capturou" = "Daphnie",
+  "Velma_capturou" = "Velma",
+  "Salsicha_capturou" = "Salsicha",
+  "Scooby_capturou" = "Scooby",
+  "Outro_capturou" = "Outro"
+)
+
+# Renomeando as variáveis do banco de dados usando os nomes traduzidos dos personagens
+dados_analise_engajamento <- dados_analise_engajamento %>%
+  rename_with(~ traducoes_apenas_personagens[.x], matches("^Fred_capturou$|^Daphnie_capturou$|^Velma_capturou$|^Salsicha_capturou$|^Scooby_capturou$|^Outro_capturou$"))
+
+# Gráfico de colunas bivariado
+grafico_colunas <- dados_analise_engajamento %>%
+  pivot_longer(cols = -engagement, names_to = "Capturou") %>%
+  filter(!is.na(value)) %>%
+  group_by(Capturou, value) %>%
+  summarise(freq = n()) %>%
+  mutate(freq_relativa = freq / sum(freq),
+         label = paste0(freq, " (", scales::percent(freq_relativa), ")"))
+
+ggplot(grafico_colunas) +
+  aes(
+    x = fct_reorder(Capturou, freq, .desc = TRUE),
+    y = freq,
+    fill = value,
+    label = label
+  ) +
+  geom_col(position = position_dodge2(preserve = "single", padding = 0)) +
+  geom_text(
+    position = position_dodge(width = 0.9),
+    vjust = -0.5,
+    hjust = 0.5,
+    size = 3
+  ) +
+  scale_fill_manual(values = c("SIM" = "#003366", "NÃO" = "#A11D21"),
+                    name = "Capturou") + # Definindo a legenda
+  labs(x = "Personagem", y = "Frequência de Engajamento", fill = "Capturou") +
+  theme_estat()
+
+# Salvando o gráfico
+ggsave(filename = file.path(caminho_resultados, "colunas-bi-freq.pdf"), width = 158, height = 93, units = "mm")
 
