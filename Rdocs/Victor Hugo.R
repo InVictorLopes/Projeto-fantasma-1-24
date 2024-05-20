@@ -171,7 +171,36 @@ ggsave(filename = file.path(caminho_resultados, "colunas-freq-armadilha-terreno.
 dados <- dados %>%
   filter(!is.na(imdb) & !is.na(engagement))
 
-# Gráfico de dispersão com linha de tendência
+# Calculando as estatísticas
+media_imdb <- mean(dados$imdb)
+media_engagement <- mean(dados$engagement)
+
+mediana_imdb <- median(dados$imdb)
+mediana_engagement <- median(dados$engagement)
+
+desvio_padrao_imdb <- sd(dados$imdb)
+desvio_padrao_engagement <- sd(dados$engagement)
+
+correlacao <- cor(dados$imdb, dados$engagement)
+
+# Exibindo os resultados
+cat("Média IMDB:", media_imdb, "\n")
+cat("Média Engajamento:", media_engagement, "\n")
+cat("Mediana IMDB:", mediana_imdb, "\n")
+cat("Mediana Engajamento:", mediana_engagement, "\n")
+cat("Desvio Padrão IMDB:", desvio_padrao_imdb, "\n")
+cat("Desvio Padrão Engajamento:", desvio_padrao_engagement, "\n")
+cat("Coeficiente de Correlação:", correlacao, "\n")
+
+#Média IMDB: 5.130522 
+#Média Engajamento: 178.1177 
+#Mediana IMDB: 5.2 
+#Mediana Engajamento: 177.56 
+#Desvio Padrão IMDB: 0.9689286 
+#Desvio Padrão Engajamento: 26.15046 
+#Coeficiente de Correlação: 0.9184371 
+
+# Gráfico de dispersão
 ggplot(dados) +
   aes(x = imdb, y = engagement) +
   geom_point(colour = "#A11D21", size = 3) +
