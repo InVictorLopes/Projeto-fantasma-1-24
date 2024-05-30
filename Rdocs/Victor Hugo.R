@@ -204,6 +204,7 @@ cat("Coeficiente de Correlação:", correlacao, "\n")
 ggplot(dados) +
   aes(x = imdb, y = engagement) +
   geom_point(colour = "#A11D21", size = 3) +
+  scale_x_continuous(limits = c(0, 10), breaks = seq(0, 10, by = 2)) +
   labs(
     x = "Nota IMDB", 
     y = "Engajamento") +
@@ -277,7 +278,7 @@ ggplot(grafico_colunas) +
   geom_col(position = position_dodge2(preserve = "single", padding = 0)) +
   geom_text(
     position = position_dodge(width = 0.9),
-    vjust = -0.5,
+    vjust = -0.2,
     hjust = 0.5,
     size = 3
   ) +
@@ -288,4 +289,5 @@ ggplot(grafico_colunas) +
 
 # Salvando o gráfico
 ggsave(filename = file.path(caminho_resultados, "colunas-bi-freq.pdf"), width = 158, height = 93, units = "mm")
+
 
