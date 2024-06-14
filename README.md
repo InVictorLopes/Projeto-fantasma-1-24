@@ -2,7 +2,7 @@
 
 Neste repositório, encontra-se todos os dados referente ao denominado projeto fantasma do processo seletivo da ESTAT do primeiro semestre de 2024, a análise foi feita para a empresa Warner Bros, do ramo de mídia e entretenimento.
 
-## Sobre o projeto:
+## Sobre o projeto
 
 O intuito é criar cinco análises a partir do banco de dados fornecido pela própria empresa, sendo elas:
 
@@ -17,6 +17,10 @@ O intuito é criar cinco análises a partir do banco de dados fornecido pela pr�
 - **banco:** Contém o banco de dados utilizado neste projeto.
 - **rdocs:** Contém o código utilizado para realizar as análises.
 - **resultados:** Contém dos gráficos resultantes das análises.
+
+## Software
+
+Foi-se usado a linguagem R 4.3.3 na IDE RStudio.
 
 ## Relatório Completo
 Para visualizar o relatório completo das análises realizadas, acesse [este link Overleaf](https://www.overleaf.com/project/6622d06c37ba659987f4aeb9).
